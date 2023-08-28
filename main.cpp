@@ -9,7 +9,6 @@
 #include "evaluate.h"
 #include <chrono>
 #include <thread>
-#include <immintrin.h>
 #include "test_suite.h"
 #include "search.h"
 #include "zobrist.h"
@@ -49,54 +48,24 @@ int main() {
     //     cout << "depth " << i << " total nodes: " << nodes << " time: " << time_span.count() << " milliseconds" << endl;
     // }
 
-    Board test = generateBoardFromFen("3qkbnr/p1pbpppp/1r6/1P1P4/4P1n1/5P2/6PP/RNBQKBNR b KQk - 0 1"); // 8/8/8/2pP4/8/4K3/8/7k w - c6 0 1 "" 8/q7/8/2pP4/8/4K3/8/7k w - c6 0 1
-    cout << test << endl;
-    //cout << getBestMove(test, 3) << endl;
-
-    count = generateMoves<CAPTURES>(test, moveList, test.blackToMove);
-    for (int i = 0; i < count; i++) {
-        cout << "move: " << moveList[i] << endl;
-        Board temp = test;
-        temp.makeMove(moveList[i]);
-        cout << evaluation(temp) << endl;
-    }
-
-    test.makeMove(moveList[2]);
-    cout << evaluation(test) << endl;
-
-    cout << test << endl;
-
-    count = generateMoves<CAPTURES>(test, moveList, test.blackToMove);
-    for (int i = 0; i < count; i++) {
-        cout << "move: " << moveList[i] << endl;
-        Board temp = test;
-        temp.makeMove(moveList[i]);
-        cout << evaluation(temp) << endl;
-    }
-
-    test.makeMove(moveList[1]);
-    cout << evaluation(test) << endl;
-
-    cout << test << endl;
-
-    printBitboard(test.pieces[3]);
-
     // cout << count << endl;
     // cout << evaluation(test) << endl;
     //runTests();
 
-    // game loop
-    // while (board.halfMoves < 100) {
-    //     struct Move bestMove = getBestMove(board, 6);
-    //     cout << bestMove << endl;
-    //     board.makeMove(bestMove);
-    //     std::cout << "\x1B[2J\x1B[H"; // clear screen
-    //     cout << board << endl;
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    // }
-
     initZobrist();
-    cout << zhash(test) << endl;
+
+    // game loop
+    while (board.halfMoves < 100 && board.highestRepeat < 3) {
+        struct Move bestMove = getBestMove(board, 6);
+        cout << bestMove << endl;
+        board.makeMove(bestMove);
+
+        std::cout << "\x1B[2J\x1B[H"; // clear screen
+        cout << board << endl;
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        string x;
+        cin >> x;
+    }
 
     return 0;
 }

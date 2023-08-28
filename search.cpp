@@ -3,6 +3,7 @@
 #include "evaluate.h"
 #include "movegen.h"
 #include "check_pin_masks.h"
+#include "zobrist.h"
 #include <cstdint>
 #include <climits>
 
@@ -40,7 +41,11 @@ int search(Board& board, int startDepth, int depth, int alpha, int beta, bool ca
         return 0; // 50 move rule, stalemate
     }
 
-    struct Move moveList[256];
+    if (board.highestRepeat == 3) {
+        return NEGATIVE_INFINITY;
+    }
+
+    Move moveList[256];
     int captureMoveCount = generateMoves<CAPTURES>(board, moveList, board.blackToMove);
 
     for (int i = 0; i < captureMoveCount; i++) {

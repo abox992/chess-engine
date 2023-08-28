@@ -1,7 +1,6 @@
 #include "evaluate.h"
 #include "board.h"
-
-#include <immintrin.h>
+#include <bit>
 
 const int pieceValue[] = {100, 300, 320, 500, 900}; // pawn, knight, bishop, rook, queen
 
@@ -18,7 +17,7 @@ int materialValue(Board& board, int color) {
     int totalValue = 0;
     for (int i = 0; i < 5; i++) {
         uint64_t temp = board.pieces[i * 2 + color];
-        int count = _mm_popcnt_u64(temp);
+        int count = std::popcount(temp);
         totalValue += count * pieceValue[i];
     }
 

@@ -48,11 +48,13 @@ class Board {
         int      enpassantPos; // legal square a pawn can move to to take with enpassant
         bool     canCastle[4];    // wk, bk, wq, bq
         bool     blackToMove;  // 0 = white 1 = black
-
         int      halfMoves;
         int      fullMoves;
 
-        std::vector<struct BoardState> stateHistory;
+        std::vector<BoardState> stateHistory;
+
+        std::vector<uint64_t> seenPositions;
+        int highestRepeat = 0;
 
         Board();
 

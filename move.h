@@ -2,9 +2,9 @@
 #define MOVE
 
 #include <iostream>
-#include <immintrin.h>
 #include "board.h"
 #include <cassert>
+#include "bit_manip.h"
 
 struct Move {
     uint8_t from;
@@ -28,7 +28,7 @@ struct Move {
         o << file[fromFile] << (fromRank + 1) << file[toFile] << (toRank + 1);
 
         if (move.promotion != 0) {
-            switch (_tzcnt_u64(move.promotion)) {
+            switch (squareOf(move.promotion)) {
                 case 0:
                     o << "->N";
                     break;

@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <bit>
 #include <tuple>
-#include <immintrin.h>
 
 #include "movegen.h"
 #include "board.h"
@@ -10,6 +9,7 @@
 #include "move.h"
 #include "helpers.h"
 #include "check_pin_masks.h"
+#include "bit_manip.h"
 
 using namespace std;
 
@@ -55,7 +55,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
             int currentSquare = (7 - file) + (8 * rank);
-            currentSquareMask = MaskForPos(currentSquare);
+            currentSquareMask = maskForPos(currentSquare);
 
             if ((board.empty & currentSquareMask) != 0) { // skip if empty
                 continue;
@@ -94,7 +94,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                 // board.updateAllPieces();
 
                                 //if (generateCheckMask(board, color) == 0) {
-                                    pLegalAttacks |= (initialAttackMask & MaskForPos(board.enpassantPos));
+                                    pLegalAttacks |= (initialAttackMask & maskForPos(board.enpassantPos));
                                 //}
 
                                 // board.pieces[enemyColor] = temp;
@@ -113,7 +113,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                 board.pieces[enemyColor] &= ~(uint64_t(1) << (board.enpassantPos + offset));
 
                                 if (generateCheckMask(board, color) == 0) {
-                                    pLegalAttacks |= (initialAttackMask & MaskForPos(board.enpassantPos));
+                                    pLegalAttacks |= (initialAttackMask & maskForPos(board.enpassantPos));
                                 }
 
                                 board.pieces[enemyColor] |= (uint64_t(1) << (board.enpassantPos + offset));
@@ -123,7 +123,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -149,7 +149,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                     for (int i = 0; i < 4; i++) {
                                         struct Move Promo;
                                         Promo = Temp;
-                                        Promo.promotion = MaskForPos(i);
+                                        Promo.promotion = maskForPos(i);
 
                                         // check pin
                                         Board pin = board;
@@ -182,7 +182,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             }
 
                             Bitloop(pLegalAttacks) {
-                                const int index = SquareOf(pLegalAttacks);
+                                const int index = squareOf(pLegalAttacks);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -199,7 +199,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                     for (int i = 0; i < 4; i++) {
                                         struct Move Promo;
                                         Promo = Temp;
-                                        Promo.promotion = MaskForPos(i);
+                                        Promo.promotion = maskForPos(i);
 
                                         // check pin
                                         Board pin = board;
@@ -246,7 +246,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -277,7 +277,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
 
                             uint64_t blockers = (~board.empty) & bishopMasks[currentSquare];
                             //uint64_t compressedBlockers = _pext_u64(blockers, bishopMasks[currentSquare]);
-                            uint64_t compressedBlockers = extract_bits<uint64_t>(blockers, bishopMasks[currentSquare]);
+                            uint64_t compressedBlockers = extract_bits(blockers, bishopMasks[currentSquare]);
 
                             uint64_t pLegalMoves = bishopLegalMoves[currentSquare][compressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -293,7 +293,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -325,7 +325,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             uint64_t blockers = (~board.empty) & rookMasks[currentSquare];
 
                             //uint64_t compressedBlockers = _pext_u64(blockers, rookMasks[currentSquare]);
-                            uint64_t compressedBlockers = extract_bits<uint64_t>(blockers, rookMasks[currentSquare]);
+                            uint64_t compressedBlockers = extract_bits(blockers, rookMasks[currentSquare]);
 
                             uint64_t pLegalMoves = rookLegalMoves[currentSquare][compressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -341,7 +341,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -372,11 +372,11 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
 
                             uint64_t blockers = (~board.empty) & rookMasks[currentSquare];
                             //uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[currentSquare]);
-                            uint64_t rookCompressedBlockers = extract_bits<uint64_t>(blockers, rookMasks[currentSquare]);
+                            uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[currentSquare]);
 
                             blockers = (~board.empty) & bishopMasks[currentSquare];
                             //uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[currentSquare]);
-                            uint64_t bishopCompressedBlockers = extract_bits<uint64_t>(blockers, bishopMasks[currentSquare]);
+                            uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[currentSquare]);
 
                             uint64_t pLegalMoves = rookLegalMoves[currentSquare][rookCompressedBlockers] | bishopLegalMoves[currentSquare][bishopCompressedBlockers];
                             pLegalMoves &= ~board.allPieces[color];
@@ -390,7 +390,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -445,7 +445,7 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                             pLegalMoves &= moveMask;
 
                             Bitloop(pLegalMoves) {
-                                const int index = SquareOf(pLegalMoves);
+                                const int index = squareOf(pLegalMoves);
 
                                 struct Move Temp;
                                 Temp.from = currentSquare;
@@ -461,10 +461,10 @@ int generateMoves(Board& board, struct Move moveList[], int color) {
                                 int maxDif = max(abs(currentX - newX), abs(currentY - newY));
 
                                 if (maxDif > 1) {
-                                    if ((MaskForPos(index) & castleSquares[color]) != 0) {
-                                        Temp.castle = MaskForPos(color);
-                                    }else if ((MaskForPos(index) & castleSquares[color + 2]) != 0) {
-                                        Temp.castle = MaskForPos(color + 2);
+                                    if ((maskForPos(index) & castleSquares[color]) != 0) {
+                                        Temp.castle = maskForPos(color);
+                                    }else if ((maskForPos(index) & castleSquares[color + 2]) != 0) {
+                                        Temp.castle = maskForPos(color + 2);
                                     }
                                 }
 

@@ -6,6 +6,7 @@
 #include <ctype.h>
 #include <bit>
 #include "board.h"
+#include "zobrist.h"
 
 using namespace std;
 
@@ -154,24 +155,10 @@ Board generateBoardFromFen(string fen) {
     }
 
 board.updateAllPieces();
+
+board.highestRepeat = 1;
+board.seenPositions.push_back(zhash(board));
+
 return board;
 
 }
-
-template <typename Integral>
-constexpr Integral extract_bits(Integral x, Integral mask) {
-   Integral res=0;
-   int bb=1;
-
-   do {
-        Integral lsb=mask & -mask;
-        mask &= ~lsb;
-        bool isset=x & lsb;
-        res |= isset ? bb : 0;
-        bb+=bb;
-    } while (mask);
-        
-  return res;
-}
-
-template uint64_t extract_bits<uint64_t>(uint64_t x, uint64_t mask);

@@ -1,8 +1,8 @@
 #include "precompute_masks.h"
 #include "board.h"
 #include "helpers.h"
+#include "bit_manip.h"
 #include <tuple>
-#include <immintrin.h>
 
 using namespace std;
 
@@ -35,10 +35,10 @@ uint64_t attacksOnSquare(Board& board, int color, int pos) {
     opKing = board.pieces[10 + enemyColor];
 
     uint64_t blockers = (~board.empty) & rookMasks[pos];
-    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[pos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[pos]);
 
     blockers = (~board.empty) & bishopMasks[pos];
-    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[pos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[pos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][pos] & opPawns)
         | (knightMasks[pos] & opKnights)
@@ -63,10 +63,10 @@ uint64_t attacksOnSquareIgnoreKing(Board& board, int color, int pos) {
     opKing = board.pieces[10 + enemyColor];
 
     uint64_t blockers = ((~board.empty) & ~board.pieces[10 + color]) & rookMasks[pos];
-    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[pos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[pos]);
 
     blockers = ((~board.empty) & ~board.pieces[10 + color]) & bishopMasks[pos];
-    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[pos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[pos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][pos] & opPawns)
         | (knightMasks[pos] & opKnights)
@@ -93,10 +93,10 @@ uint64_t attacksToKing(Board& board, int color) {
     opBQ |= board.pieces[4 + enemyColor];
 
     uint64_t blockers = (~board.empty) & rookMasks[kingPos];
-    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
 
     blockers = (~board.empty) & bishopMasks[kingPos];
-    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
         | (knightMasks[kingPos] & opKnights)
@@ -122,10 +122,10 @@ uint64_t attacksToKingXray(Board& board, int color) {
     opBQ |= board.pieces[4 + enemyColor];
 
     uint64_t blockers = (board.allPieces[enemyColor]) & rookMasks[kingPos];
-    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
 
     blockers = (board.allPieces[enemyColor]) & bishopMasks[kingPos];
-    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
         | (knightMasks[kingPos] & opKnights)
@@ -162,7 +162,7 @@ uint64_t generateCheckMask(Board& board, int color) {
             }
 
             // at this point we know currentpos + offset is at least valid, now check for piece
-            uint64_t currentMask = MaskForPos(currentPos + offset);
+            uint64_t currentMask = maskForPos(currentPos + offset);
             if ((currentMask & kingAttackers) != 0) {
                 kingAttackers |= tempDirectionMask;
                 break;
@@ -202,7 +202,7 @@ uint64_t generatePinMask(Board& board, int color) {
             }
 
             // at this point we know currentpos + offset is at least valid, now check for piece
-            uint64_t currentMask = MaskForPos(currentPos + offset);
+            uint64_t currentMask = maskForPos(currentPos + offset);
             if ((currentMask & kingAttackers) != 0) {
                 kingAttackers |= tempDirectionMask;
                 break;

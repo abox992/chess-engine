@@ -4,6 +4,7 @@
 #include <cmath>
 #include "board.h"
 #include "helpers.h"
+#include "bit_manip.h"
 
 using namespace std;
 
@@ -38,7 +39,7 @@ uint64_t zhash(Board& board) {
         
         uint64_t curBB = board.pieces[i];
         Bitloop(curBB) {
-             const int sq = SquareOf(curBB);
+             const int sq = squareOf(curBB);
              hash ^= randomTable[sq][i];
         }
     }

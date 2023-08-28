@@ -1,12 +1,9 @@
 #include "precompute_masks.h"
 #include <iostream>
 #include <cstdint>
-#include <immintrin.h>
+#include "bit_manip.h"
 
 using namespace std;
-
-#define SquareOf(X) _tzcnt_u64(X)
-#define Bitloop(X) for(;X; X = _blsr_u64(X))
 
 // 0 for white 1 for black
 uint64_t pawnMoveMasks[2][64];
@@ -256,7 +253,7 @@ void initRookMovesTable() {
             int compressed = i;
             int count = 0;
             Bitloop(tempRookMask) {
-                const int index = SquareOf(tempRookMask);
+                const int index = squareOf(tempRookMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;
@@ -307,7 +304,7 @@ void initBishopMovesTable() {
             int compressed = i;
             int count = 0;
             Bitloop(tempBishopMask) {
-                const int index = SquareOf(tempBishopMask);
+                const int index = squareOf(tempBishopMask);
 
                 blockMask |= (uint64_t((compressed >> count) & 1) << index);
                 count++;

@@ -3,17 +3,12 @@
 #include "helpers.h"
 #include "precompute_masks.h"
 
-#include <immintrin.h>
+#include "bit_manip.h"
+#include "zobrist.h"
+
 #include <cstring>
 
 using namespace std;
-
-#define SquareOf(X) _tzcnt_u64(X)
-#define Bitloop(X) for(;X; X = _blsr_u64(X))
-// Bitloop(bishops) {
-//      const Square sq = SquareOf(bishops);
-//      ...
-// }
 
 Board::Board() {
     setStartPos();
@@ -41,7 +36,7 @@ void Board::setPieceSet(int i, uint64_t num) {
 // only use this on king/queen
 int Board::getPiecePos(int i) {
     uint64_t temp = pieces[i];
-    return _tzcnt_u64(temp);
+    return squareOf(temp);
 }
 
 void Board::setStartPos() {
@@ -75,6 +70,9 @@ void Board::setStartPos() {
 
     halfMoves = 0;
     fullMoves = 1;
+
+    highestRepeat = 1;
+    seenPositions.push_back(zhash(*this));
 }
 
 void Board::updateAllPieces() {
@@ -95,7 +93,7 @@ void Board::updateAllPieces() {
     empty = ~(allPieces[0] | allPieces[1]);
 }
 
-void Board::makeMove(struct Move move) {
+void Board::makeMove(Move move) {
 
     // save state
     BoardState prevState;
@@ -143,7 +141,7 @@ void Board::makeMove(struct Move move) {
     // update castle bitboards
     if (move.castle != 0) {
         uint64_t tempMoveCastle = move.castle;
-        int pos = _tzcnt_u64(tempMoveCastle); // note castle is 0 after this is called
+        int pos = squareOf(tempMoveCastle); // note castle is 0 after this is called
         pieces[10 + move.color] = castleSquares[pos]; // update king pos
         pieces[6 + move.color] |= castleRookSquares[pos]; // add new rook pos
         pieces[6 + move.color] &= ~originalRookSquares[pos]; // remove old rook pos
@@ -179,9 +177,9 @@ void Board::makeMove(struct Move move) {
     if (move.enpessant) { // enpassant move
         // pawn was already moved above, just have to get rid of the piece it took
         if (move.color) { // black
-            pieces[enemyColor] &= ~MaskForPos(enpassantPos + 8);
+            pieces[enemyColor] &= ~maskForPos(enpassantPos + 8);
         } else { // white
-            pieces[enemyColor] &= ~MaskForPos(enpassantPos - 8);
+            pieces[enemyColor] &= ~maskForPos(enpassantPos - 8);
         }
     }
     enpassantPos = 0;
@@ -197,7 +195,7 @@ void Board::makeMove(struct Move move) {
     // promotion
     if (move.promotion != 0) {
         uint64_t tempMovePromo = move.promotion;
-        int index = _tzcnt_u64(tempMovePromo);
+        int index = squareOf(tempMovePromo);
         pieces[promoPieces[index] + move.color] |= toMask; // add new piece
         pieces[move.color] &= ~toMask; // remove old pawn
 
@@ -208,6 +206,20 @@ void Board::makeMove(struct Move move) {
 
     // update all pieces
     updateAllPieces();
+
+    uint64_t currentHash = zhash(*this);
+    seenPositions.push_back(currentHash);
+
+    int count = 0;
+    for (auto pos : seenPositions) {
+        if (pos == currentHash) {
+            count++;
+        }
+    }
+
+    if (count > highestRepeat) {
+        highestRepeat = count;
+    }
 
 }
 
@@ -225,6 +237,8 @@ void Board::unmakeMove() {
     fullMoves = prevState.fullMoves;
 
     stateHistory.pop_back();
+    seenPositions.pop_back();
+    highestRepeat--;
 
 }
 
@@ -242,10 +256,10 @@ bool Board::inCheck() {
     opBQ |= pieces[4 + enemyColor];
 
     uint64_t blockers = (~empty) & rookMasks[kingPos];
-    uint64_t rookCompressedBlockers = _pext_u64(blockers, rookMasks[kingPos]);
+    uint64_t rookCompressedBlockers = extract_bits(blockers, rookMasks[kingPos]);
 
     blockers = (~empty) & bishopMasks[kingPos];
-    uint64_t bishopCompressedBlockers = _pext_u64(blockers, bishopMasks[kingPos]);
+    uint64_t bishopCompressedBlockers = extract_bits(blockers, bishopMasks[kingPos]);
 
     uint64_t kingAttackers = (pawnAttackMasks[color][kingPos] & opPawns)
         | (knightMasks[kingPos] & opKnights)
